@@ -1,189 +1,155 @@
 #!/usr/bin/python3
-""" command interpreter for HBHN console """
+"""
+command interpreter for HBNB console
+"""
 
 import cmd
-import re
 import models
 from models.base_model import BaseModel
-from models import storage
-import json
 from models.user import User
-from models.place import Place
 from models.state import State
 from models.city import City
 from models.amenity import Amenity
+from models.place import Place
 from models.review import Review
 
-class_home = {
-    "BaseModel": BaseModel,
-    "User": User,
-    "Place": Place,
-    "Amenity": Amenity,
-    "City": City,
-    "Review": Review,
-    "State": State
-}
-
 class HBNBCommand(cmd.Cmd):
-    prompt = '(hbnb)  '
+    """Command interpreter for the HBNB console."""
 
-    def do_EOF(self, line):
-        """Exit console"""
-        print("")
-        return True
-
-    def do_quit(self, line):
-        """Quit command to exit the program"""
-        print("Good Bye!")
-        return True
-
-    def help_quit(self):
-        """when two arguments involve"""
-        print('\n'.join(["Quit command to exit the program"]))
+    prompt = '(hbnb) '
+    VALID_CLASSES = ['BaseModel', 'User', 'State', 'City', 'Amenity', 'Place', 'Review']
 
     def emptyline(self):
-        """ overwriting the emptyline method """
-        return False
-        # OR
-        # pass
+        """Called when an empty line is entered in response to the prompt."""
+        pass
 
-    def do_create(self, line):
-        """Creates a new instances of a class"""
-        if line:
-            try:
-                glo_cls = globals().get(line, None)
-                obj = glo_cls()
-                obj.save()
-                print(obj.id)  # print the id
-            except Exception:
-                print("** class doesn't exist **")
-        else:
+    def do_quit(self, arg):
+        """Exit the command interpreter."""
+        return True
+
+    def do_EOF(self, arg):
+        """Exit the command interpreter (Ctrl-D or Ctrl-Z)."""
+        print()
+        return True
+
+    def do_help(self, arg):
+        """Provide help information."""
+        cmd.Cmd.do_help(self, arg)
+
+    def do_create(self, arg):
+        """Create a new instance of BaseModel, save it (to the JSON file) and print the id"""
+        if not arg:
             print("** class name missing **")
-
-    def do_show(self, line):
-        """print <class name> <id>"""
-        arr = line.split()    # split & assign to varia
-
-        if len(arr) < 1:
-            print("** class name missing **")
-        elif arr[0] not in class_home:
+        elif arg not in self.VALID_CLASSES:
             print("** class doesn't exist **")
-        elif len(arr) < 2:
+        else:
+            new_obj = eval(arg)()
+            new_obj.save()
+            print(new_obj.id)
+
+    def do_show(self, arg):
+        """Prints the string representation of an instance based on the class name and id"""
+        args = arg.split()
+        if not args:
+            print("** class name missing **")
+        elif args[0] not in self.VALID_CLASSES:
+            print("** class doesn't exist **")
+        elif len(args) < 2:
             print("** instance id missing **")
         else:
-            new_str = f"{arr[0]}.{arr[1]}"
-            if new_str not in storage.all():
-                print("** no instance found **")
+            key = "{}.{}".format(args[0], args[1])
+            if key in models.storage.all():
+                print(models.storage.all()[key])
             else:
-                print(storage.all()[new_str])
+                print("** no instance found **")
 
-    def do_destroy(self, line):
-        """Destroy command deletes an instance based on the class name and id"""
-        arr = line.split()
-        if len(arr) < 1:
+    def do_destroy(self, arg):
+        """Deletes an instance based on the class name and id (save the change into the JSON file)"""
+        args = arg.split()
+        if not args:
             print("** class name missing **")
-        elif arr[0] not in class_home:
+        elif args[0] not in self.VALID_CLASSES:
             print("** class doesn't exist **")
-        elif len(arr) < 2:
+        elif len(args) < 2:
             print("** instance id missing **")
         else:
-            new_str = f"{arr[0]}.{arr[1]}"
-            if new_str not in storage.all().keys():
+            key = "{}.{}".format(args[0], args[1])
+            if key in models.storage.all():
+                models.storage.all().pop(key)
+                models.storage.save()
+            else:
                 print("** no instance found **")
-            else:
-                storage.all().pop(new_str)
-                # del (storage.all()[new_str])
-                storage.save()
 
-    def do_all(self, line):
-        """ Print all instances in string representation """
-        objects = []
-        if line == "":
-            print([str(value) for key, value in storage.all().items()])
+    def do_all(self, arg):
+        """Prints all string representation of all instances based or not on the class name"""
+        args = arg.split()
+        obj_list = []
+        if not arg or args[0] in self.VALID_CLASSES:
+            for key, obj in models.storage.all().items():
+                obj_list.append(str(obj))
+            print(obj_list)
         else:
-            st = line.split(" ")
-            if st[0] not in class_home:
-                print("** class doesn't exist **")
-            else:
-                for key, value in storage.all().items():
-                    clas = key.split(".")
-                    if clas[0] == st[0]:
-                        objects.append(str(value))
-                print(objects)
-
-    def do_update(self, line):
-        """Update a class instance of a given id by adding or updating
-        a given attribute key/value pair or dictionary.
-        usage:  update <class> <id> <attribute_name> <attribute_value> or
-                <class>.update(<id>, <attribute_name>, <attribute_value>) or
-                <class>.update(<id>, <dictionary>)
-        """
-        arr = line.split()
-        if len(arr) < 1:
-            print("** class name missing **")
-            return
-        elif arr[0] not in class_home:
             print("** class doesn't exist **")
-            return
-        elif len(arr) < 2:
+
+    def do_update(self, arg):
+        """Updates an instance based on the class name and id (save the change into the JSON file)"""
+        args = arg.split()
+        if not args:
+            print("** class name missing **")
+        elif args[0] not in self.VALID_CLASSES:
+            print("** class doesn't exist **")
+        elif len(args) < 2:
             print("** instance id missing **")
-            return
         else:
-            new_str = f"{arr[0]}.{arr[1]}"
-            if new_str not in storage.all().keys():
+            key = "{}.{}".format(args[0], args[1])
+            if key not in models.storage.all():
                 print("** no instance found **")
-            elif len(arr) < 3:
+                return
+            if len(args) < 3:
                 print("** attribute name missing **")
-                return
-            elif len(arr) < 4:
+            elif len(args) < 4:
                 print("** value missing **")
-                return
             else:
-                setattr(storage.all()[new_str], arr[2], arr[3])
-                storage.save()
-
-    def do_count(self, line):
-        """Print the count all class instances"""
-        kclass = globals().get(line, None)
-        if kclass is None:
-            print("** class doesn't exist **")
-            return
-        count = 0
-        for obj in storage.all().values():
-            if obj.__class__.__name__ == line:
-                count += 1
-        print(count)
+                obj = models.storage.all()[key]
+                setattr(obj, args[2], args[3])
+                models.storage.save()
 
     def default(self, line):
-        if line is None:
+        """Handles commands of the form <class name>.method()"""
+        tokens = line.split('.')
+        if len(tokens) >= 2 and tokens[0] in self.VALID_CLASSES:
+            class_name = tokens[0]
+            method_tokens = tokens[1].split('(')
+            method_name = method_tokens[0]
+            method_args = method_tokens[1][:-1]  # Remove the closing parenthesis
+
+            if method_name == "all":
+                self.do_all(class_name)
+            elif method_name == "count":
+                self.do_count(class_name)
+            elif method_name == "show":
+                self.do_show(f"{class_name} {method_args}")
+            elif method_name == "destroy":
+                self.do_destroy(f"{class_name} {method_args}")
+            elif method_name == "update":
+                self.do_update(f"{class_name} {method_args}")
+        else:
+            print("*** Unknown syntax: {}".format(line))
+
+    def do_count(self, arg):
+        """Prints the count of instances of a class"""
+        args = arg.split()
+        if not args:
+            print("** class name missing **")
             return
-
-        cmdPattern = "^([A-Za-z]+)\.([a-z]+)\(([^(]*)\)"
-        paramsPattern = """^"([^"]+)"(?:,\s*(?:"([^"]+)"|(\{[^}]+\}))(?:,\s*(?:("?[^"]+"?)))?)?"""
-        m = re.match(cmdPattern, line)
-        if not m:
-            super().default(line)
-            return
-        mName, method, params = m.groups()
-        m = re.match(paramsPattern, params)
-        params = [item for item in m.groups() if item] if m else []
-
-        cmd = " ".join([mName] + params)
-
-        if method == 'all':
-            return self.do_all(cmd)
-
-        if method == 'count':
-            return self.do_count(cmd)
-
-        if method == 'show':
-            return self.do_show(cmd)
-
-        if method == 'destroy':
-            return self.do_destroy(cmd)
-
-        if method == 'update':
-            return self.do_update(cmd)
+        if args[0] in self.VALID_CLASSES:
+            count = 0
+            for key in models.storage.all():
+                if args[0] in key:
+                    count += 1
+            print(count)
+        else:
+            print("** class doesn't exist **")
 
 if __name__ == '__main__':
     HBNBCommand().cmdloop()

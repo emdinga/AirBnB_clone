@@ -1,7 +1,8 @@
 #!/usr/bin/python3
 """
-Defines all common attributes/methods for other classes
+Defines the BaseModel class.
 """
+
 import uuid
 from datetime import datetime
 import models
@@ -13,10 +14,11 @@ class BaseModel:
 
     def __init__(self, *args, **kwargs):
         """
-        Initialization of a Base instance.
+        Initialize a BaseModel instance.
+        
         Args:
-            - *args: list of arguments
-            - **kwargs: dict of key-values arguments
+            *args: list of arguments
+            **kwargs: dict of key-values arguments
         """
         if kwargs:
             if "__class__" in kwargs:
@@ -35,22 +37,22 @@ class BaseModel:
     def __str__(self):
         """
         Returns a readable string representation
-        of BaseModel instances
+        of BaseModel instances.
         """
         return "[{}] ({}) {}".format(self.__class__.__name__, self.id, self.__dict__)
 
     def save(self):
         """
         Update the 'updated_at' attribute 
-        and save the objects to the JSON file.
+        and save the object to the JSON file.
         """
         self.updated_at = datetime.now()
-        storage.save()
+        models.storage.save()
 
     def to_dict(self):
         """
         Returns a dictionary that contains all
-        keys/values of the instance
+        keys/values of the instance.
         """
         dict_rep = self.__dict__.copy()
         dict_rep['__class__'] = self.__class__.__name__

@@ -6,6 +6,7 @@ to a JSON file and deserializes JSON file to instances
 
 import json
 import os
+from os.path import exists
 from models.base_model import BaseModel
 from models.user import User
 from models.place import Place

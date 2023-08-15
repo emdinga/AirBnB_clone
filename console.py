@@ -92,41 +92,34 @@ class HBNBCommand(cmd.Cmd):
             print("** class doesn't exist **")
 
     def do_update(self, arg):
-    """Updates an instance based on the class name and id with a dictionary representation."""
-    args = arg.split(",")
-    if not args:
-        print("** class name missing **")
-        return
-    class_name = args[0]
-    if class_name not in self.VALID_CLASSES:
-        print("** class doesn't exist **")
-        return
-    if len(args) < 2:
-        print("** instance id missing **")
-        return
-    instance_id = args[1].strip()
-    key = "{}.{}".format(class_name, instance_id)
-    if key not in models.storage.all():
-        print("** no instance found **")
-        return
-    if len(args) < 3:
-        print("** attribute name missing **")
-        return
-    attr_name = args[2].strip()
-    if len(args) < 4:
-        print("** value missing **")
-        return
-    attr_value = args[3].strip()
-    obj = models.storage.all()[key]
-    if hasattr(obj, attr_name):
-        if hasattr(obj, attr_name) and isinstance(getattr(obj, attr_name), int):
-            attr_value = int(attr_value)
-        elif hasattr(obj, attr_name) and isinstance(getattr(obj, attr_name), float):
-            attr_value = float(attr_value)
-        setattr(obj, attr_name, attr_value)
+        """Updates an instance based on the class name and id with a dictionary"""
+        args = arg.split()
+        if not args:
+            print("** class name missing **")
+            return
+        class_name = args[0]
+        if class_name not in self.VALID_CLASSES:
+            print("** class doesn't exist **")
+            return
+        if len(args) < 2:
+            print("** instance id missing **")
+            return
+        instance_id = args[1]
+        key = "{}.{}".format(class_name, instance_id)
+        if key not in models.storage.all():
+            print("** no instance found **")
+            return
+        if len(args) < 3:
+            print("** attribute name missing **")
+            return
+        if len(args) < 4:
+            print("** value missing **")
+            return
+        obj = models.storage.all()[key]
+        attr_dict = eval(args[3])
+        for key, value in attr_dict.items():
+            setattr(obj, key, value)
         obj.save()
-    else:
-        print("** attribute doesn't exist **")
 
     def default(self, line):
         """Handles commands of the form <class name>.method()"""

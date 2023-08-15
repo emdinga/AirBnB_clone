@@ -121,6 +121,21 @@ class HBNBCommand(cmd.Cmd):
             setattr(obj, key, value)
         obj.save()
 
+    def do_count(self, arg):
+        """Prints the count of instances of a class"""
+        args = arg.split()
+        if not args:
+            print("** class name missing **")
+            return
+        if args[0] in self.VALID_CLASSES:
+            count = 0
+            for key in models.storage.all():
+                if args[0] in key:
+                    count += 1
+            print(count)
+        else:
+            print("** class doesn't exist **")
+
     def default(self, line):
         """Handles commands of the form <class name>.method()"""
         tokens = line.split('.')
@@ -142,21 +157,6 @@ class HBNBCommand(cmd.Cmd):
                 self.do_update(f"{class_name} {method_args}")
         else:
             print("*** Unknown syntax: {}".format(line))
-
-    def do_count(self, arg):
-        """Prints the count of instances of a class"""
-        args = arg.split()
-        if not args:
-            print("** class name missing **")
-            return
-        if args[0] in self.VALID_CLASSES:
-            count = 0
-            for key in models.storage.all():
-                if args[0] in key:
-                    count += 1
-            print(count)
-        else:
-            print("** class doesn't exist **")
 
 if __name__ == '__main__':
     HBNBCommand().cmdloop()
